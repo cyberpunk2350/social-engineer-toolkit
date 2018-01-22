@@ -108,6 +108,8 @@ def ms_payload_2(payload):
         '4': "set/reverse_shell",
         '5': "set/reverse_shell",
         '6': "shellcode/alphanum",
+#        '7': "7",
+        '8': "cmd/multi",
     }.get(payload, "ERROR")
 
 
@@ -159,12 +161,12 @@ def teensy_config(choice):
     """ Receives the input given by the user from set.py """
 
     return {
-        '1': "powershell_down.pde",
-        '2': "wscript.pde",
-        '3': "powershell_reverse.pde",
-        '4': "beef.pde",
-        '5': "java_applet.pde",
-        '6': "gnome_wget.pde"
+        '1': "powershell_down.ino",
+        '2': "wscript.ino",
+        '3': "powershell_reverse.ino",
+        '4': "beef.ino",
+        '5': "java_applet.ino",
+        '6': "gnome_wget.ino"
     }.get(choice, "ERROR")
 
 

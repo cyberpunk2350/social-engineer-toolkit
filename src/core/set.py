@@ -1,10 +1,10 @@
 #!/usr/bin/env python
-#########################################
+#
 #
 # The Social-Engineer Toolkit
 # Written by: David Kennedy (ReL1K)
 #
-###############################################
+#
 import shutil
 import os
 import time
@@ -13,18 +13,19 @@ import sys
 import socket
 from src.core.setcore import *
 from src.core.menu import text
-ipaddr= ""
+
+ipaddr = ""
 me = mod_name()
-###############################################
+#
 # Define path and set it to the SET root dir
-###############################################
+#
 
 definepath = os.getcwd()
 sys.path.append(definepath)
 
-################################################
+#
 # ROOT CHECK
-################################################
+#
 
 # grab the operating system
 operating_system = check_os()
@@ -34,8 +35,10 @@ msf_path = meta_path()
 
 if operating_system == "posix":
     if os.geteuid() != 0:
-        print("\n The Social-Engineer Toolkit (SET) - by David Kennedy (ReL1K)")
-        print("\n Not running as root. \n\nExiting the Social-Engineer Toolkit (SET).\n")
+        print(
+            "\n The Social-Engineer Toolkit (SET) - by David Kennedy (ReL1K)")
+        print(
+            "\n Not running as root. \n\nExiting the Social-Engineer Toolkit (SET).\n")
         sys.exit(1)
 
 define_version = get_version()
@@ -43,9 +46,9 @@ define_version = get_version()
 try:
     while 1:
         show_banner(define_version, '1')
-       ###################################################
-       #        USER INPUT: SHOW MAIN MENU               #
-       ###################################################
+       #
+       # USER INPUT: SHOW MAIN MENU               #
+       #
         debug_msg(me, "printing 'text.main'", 5)
         show_main_menu = create_menu(text.main_text, text.main)
         # special case of list item 99
@@ -65,9 +68,9 @@ try:
         if main_menu_choice == '1':  # 'Spearphishing Attack Vectors
             while 1:
 
-             ###################################################
-             #        USER INPUT: SHOW SPEARPHISH MENU         #
-             ###################################################
+             #
+             # USER INPUT: SHOW SPEARPHISH MENU         #
+             #
 
                 if operating_system != "windows":
                     debug_msg(me, "printing 'text.spearphish_menu'", 5)
@@ -110,16 +113,16 @@ try:
                     if spearphish_menu_choice == '99':
                         break
 
- #####################
+ #
  # Web Attack Menu
- #####################
+ #
         # Main Menu choice 2: Website Attack Vectors
         if main_menu_choice == '2':
             while 1:
 
-                ###################################################
-                #        USER INPUT: SHOW WEB ATTACK MENU         #
-                ###################################################
+                #
+                # USER INPUT: SHOW WEB ATTACK MENU         #
+                #
 
                 debug_msg(me, "printing 'text.webattack_menu'", 5)
                 show_webattack_menu = create_menu(
@@ -169,19 +172,19 @@ try:
                     return_continue()
                     break
 
-                ###############################################################
+                #
                 # HTA ATTACK VECTOR METHOD HERE
-                ###############################################################
-                #if attack_vector == '8':
+                #
+                # if attack_vector == '8':
                     # assign HTA attack vector - do more later
                 #    attack_vector = "hta"
 
                 # Removed to delete MLITM
                 if attack_vector != "99999":
 
-                    ###################################################
-                    #     USER INPUT: SHOW WEB ATTACK VECTORS MENU    #
-                    ###################################################
+                    #
+                    # USER INPUT: SHOW WEB ATTACK VECTORS MENU    #
+                    #
 
                     if attack_vector != "7":
                         debug_msg(
@@ -342,37 +345,17 @@ try:
                                                 # if you arent using NAT/Port
                                                 # FWD
                                                 if nat_or_fwd == "NO":
-                                                    print_info(
-                                                        "Enter the IP address of your interface IP or if your using an external IP, what")
-                                                    print_info(
-                                                        "will be used for the connection back and to house the web server (your interface address)")
-                                                    ipaddr = raw_input(
-                                                        setprompt(["2"], "IP address or hostname for the reverse connection"))
-                                                    # here we check if they are
-                                                    # using a hostname else we
-                                                    # loop through until they
-                                                    # have a legit one
-                                                    if validate_ip(ipaddr) == False:
-                                                        while 1:
-                                                            choice = raw_input(setprompt(
-                                                                ["2"], "This is not an IP address. Are you using a hostname? [y/n] "))
-                                                            if choice == "" or choice.lower() == "y":
-                                                                print_status(
-                                                                    "Roger that. Using hostnames moving forward..")
-                                                                break
-                                                            else:
-                                                                ipaddr = raw_input(
-                                                                    setprompt(["2"], "IP address for the reverse connection"))
-                                                                if validate_ip(ipaddr) == True:
-                                                                    break
+                                                    ipaddr = grab_ipaddress()
 
                                 if attack_vector == "harvester" or attack_vector == "tabnabbing" or attack_vector == "webjacking":
-                                    print_info(
-                                        "This option is used for what IP the server will POST to.")
-                                    print_info(
-                                        "If you're using an external IP, use your external IP for this")
-                                    ipaddr = raw_input(
-                                        setprompt(["2"], "IP address for the POST back in Harvester/Tabnabbing"))
+                                    print_info("This option is used for what IP the server will POST to.")
+                                    print_info("If you're using an external IP, use your external IP for this")
+                                    rhost = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+                                    rhost.connect(('google.com', 0))
+                                    rhost.settimeout(2)
+                                    revipaddr = rhost.getsockname()[0]
+                                    ipaddr = raw_input(setprompt(["2"], "IP address for the POST back in Harvester/Tabnabbing [" + revipaddr + "]"))
+                                    if ipaddr == "": ipaddr=revipaddr
 
                                 if check_options("IPADDR=") != 0:
                                     ipaddr = check_options("IPADDR=")
@@ -380,7 +363,6 @@ try:
                                 else:
                                     if ipaddr != "":
                                         update_options("IPADDR=" + ipaddr)
-
 
                         # if java applet attack
                         if attack_vector == "java":
@@ -442,7 +424,8 @@ try:
                             debug_msg(
                                 me, "importing 'src.core.payloadgen.create_payloads'", 1)
                             try:
-                                module_reload(src.core.payloadgen.create_payloads)
+                                module_reload(
+                                    src.core.payloadgen.create_payloads)
                             except:
                                 import src.core.payloadgen.create_payloads
 
@@ -476,16 +459,20 @@ try:
                                 from src.webattack.profiler.webprofiler import *
                                 prep_website()
 
-                            # launch HTA attack vector after the website has been cloned
+                            # launch HTA attack vector after the website has
+                            # been cloned
                             if attack_vector == "hta":
-                                # launch HTA attack vector after the website has been cloned
+                                # launch HTA attack vector after the website
+                                # has been cloned
                                 from src.webattack.hta.main import *
                                 # update config
                                 update_options("ATTACK_VECTOR=HTA")
                                 gen_hta_cool_stuff()
                                 attack_vector = "hta"
-                                print_status("Automatically starting Apache for you...")
-                                subprocess.Popen("service apache2 start",shell=True).wait()
+                                print_status(
+                                    "Automatically starting Apache for you...")
+                                subprocess.Popen(
+                                    "service apache2 start", shell=True).wait()
 
                             if attack_vector != "harvester":
                                 if attack_vector != "tabnabbing":
@@ -517,7 +504,8 @@ try:
                     if choice3 == '2':
                         # flag that we want a custom website
                         definepath = os.getcwd()
-                        sys.path.append(definepath + "/src/webattack/web_clone/")
+                        sys.path.append(
+                            definepath + "/src/webattack/web_clone/")
                         if os.path.isfile(setdir + "/site.template"):
                             os.remove(setdir + "/site.template")
                         filewrite = open(setdir + "/site.template", "w")
@@ -525,7 +513,8 @@ try:
                         print_info("SET supports both HTTP and HTTPS")
                         # specify the site to clone
                         print_info("Example: http://www.thisisafakesite.com")
-                        URL = raw_input(setprompt(["2"], "Enter the url to clone"))
+                        URL = raw_input(
+                            setprompt(["2"], "Enter the url to clone"))
                         match = re.search("http://", URL)
                         match1 = re.search("https://", URL)
                         if not match:
@@ -544,16 +533,20 @@ try:
                         filewrite.write("\nURL=%s" % (URL))
                         filewrite.close()
 
-                        # launch HTA attack vector after the website has been cloned
+                        # launch HTA attack vector after the website has been
+                        # cloned
                         if attack_vector == "hta":
-                            # launch HTA attack vector after the website has been cloned
+                            # launch HTA attack vector after the website has
+                            # been cloned
                             from src.webattack.hta.main import *
                             # update config
                             update_options("ATTACK_VECTOR=HTA")
                             gen_hta_cool_stuff()
                             attack_vector = "hta"
-                            print_status("Automatically starting Apache for you...")
-                            subprocess.Popen("service apache2 start",shell=True).wait()
+                            print_status(
+                                "Automatically starting Apache for you...")
+                            subprocess.Popen(
+                                "service apache2 start", shell=True).wait()
 
                         # grab browser exploit selection
                         if attack_vector == "browser":
@@ -591,7 +584,8 @@ try:
                                 debug_msg(
                                     me, "importing 'src.core.payloadgen.create_payloads'", 1)
                                 try:
-                                    module_reload(src.core.payloadgen.create_payloads)
+                                    module_reload(
+                                        src.core.payloadgen.create_payloads)
                                 except:
                                     import src.core.payloadgen.create_payloads
 
@@ -723,16 +717,20 @@ try:
                                 me, "importing 'src.webattack.web_clone.cloner'", 1)
                             import src.webattack.web_clone.cloner
 
-                        # launch HTA attack vector after the website has been cloned
+                        # launch HTA attack vector after the website has been
+                        # cloned
                         if attack_vector == "hta":
-                            # launch HTA attack vector after the website has been cloned
+                            # launch HTA attack vector after the website has
+                            # been cloned
                             from src.webattack.hta.main import *
                             # update config
                             update_options("ATTACK_VECTOR=HTA")
                             gen_hta_cool_stuff()
                             attack_vector = "hta"
-                            print_status("Automatically starting Apache for you...")
-                            subprocess.Popen("service apache2 start",shell=True).wait()
+                            print_status(
+                                "Automatically starting Apache for you...")
+                            subprocess.Popen(
+                                "service apache2 start", shell=True).wait()
 
                         # if java applet attack
                         if attack_vector == "java":
@@ -850,15 +848,16 @@ try:
                         print (" Returning to main menu.\n")
                         break
                 except KeyboardInterrupt:
-                    print(" Control-C detected, bombing out to previous menu..")
+                    print(
+                        " Control-C detected, bombing out to previous menu..")
                     break
 
         # Define Auto-Infection USB/CD Method here
         if main_menu_choice == '3':
 
-                ###################################################
-                #     USER INPUT: SHOW INFECTIOUS MEDIA MENU      #
-                ###################################################
+                #
+                # USER INPUT: SHOW INFECTIOUS MEDIA MENU      #
+                #
                 # Main Menu choice 3: Infectious Media Generator
             debug_msg(me, "printing 'text.infectious_menu'", 5)
             show_infectious_menu = create_menu(
@@ -939,9 +938,9 @@ try:
         # Main Menu choice 6: Teensy USB HID Attack Vector
         if main_menu_choice == '6':
 
-            ###################################################
-            #        USER INPUT: SHOW TEENSY MENU             #
-            ###################################################
+            #
+            # USER INPUT: SHOW TEENSY MENU             #
+            #
             debug_msg(me, "printing 'text.teensy_menu'", 5)
             show_teensy_menu = create_menu(text.teensy_text, text.teensy_menu)
             teensy_menu_choice = raw_input(setprompt(["6"], ""))
@@ -956,7 +955,7 @@ try:
                 # set our teensy info file in program junk
                 filewrite = open(setdir + "/teensy", "w")
                 filewrite.write(teensy_menu_choice + "\n")
-                if teensy_menu_choice != "3" and teensy_menu_choice != "7" and teensy_menu_choice != "8" and teensy_menu_choice != "9" and teensy_menu_choice != "10" and teensy_menu_choice != "11" and teensy_menu_choice != "12" and teensy_menu_choice != "13":
+                if teensy_menu_choice != "3" and teensy_menu_choice != "7" and teensy_menu_choice != "8" and teensy_menu_choice != "9" and teensy_menu_choice != "10" and teensy_menu_choice != "11" and teensy_menu_choice != "12" and teensy_menu_choice != "13" and teensy_menu_choice != "14":
                     yes_or_no = yesno_prompt(
                         "0", "Do you want to create a payload and listener [yes|no]: ")
                     if yes_or_no == "YES":
@@ -980,7 +979,7 @@ try:
                 filewrite.write("hid")
                 filewrite.close()
                 # if we are doing binary2teensy
-                if teensy_menu_choice != "7" and teensy_menu_choice != "8" and teensy_menu_choice != "9" and teensy_menu_choice != "10" and teensy_menu_choice != "11" and teensy_menu_choice != "12":
+                if teensy_menu_choice != "7" and teensy_menu_choice != "8" and teensy_menu_choice != "9" and teensy_menu_choice != "10" and teensy_menu_choice != "11" and teensy_menu_choice != "12" and teensy_menu_choice != "14":
                     sys.path.append(definepath + "/src/teensy")
                     debug_msg(me, "importing 'src.teensy.teensy'", 1)
                     try:
@@ -998,23 +997,23 @@ try:
                 # if we are doing the sd2teensy osx attack
                 if teensy_menu_choice == "9":
                     print_status(
-                        "Generating the SD2Teensy OSX pde file for you...")
+                        "Generating the SD2Teensy OSX ino file for you...")
                     if not os.path.isdir(setdir + "/reports/osx_sd2teensy"):
                         os.makedirs(setdir + "/reports/osx_sd2teensy")
-                    shutil.copyfile("src/teensy/osx_sd2teensy.pde",
-                                    "%s/reports/osx_sd2teensy/osx_sd2teensy.pde" % (setdir))
+                    shutil.copyfile("src/teensy/osx_sd2teensy.ino",
+                                    "%s/reports/osx_sd2teensy/osx_sd2teensy.ino" % (setdir))
                     print_status(
-                        "File has been exported to ~/.set/reports/osx_sd2teensy/osx_sd2teensy.pde")
+                        "File has been exported to ~/.set/reports/osx_sd2teensy/osx_sd2teensy.ino")
                     return_continue()
 
                 # if we are doing the X10 Arduino Sniffer
                 if teensy_menu_choice == "10":
                     print_status(
-                        "Generating the Arduino sniffer and libraries pde..")
+                        "Generating the Arduino sniffer and libraries ino..")
                     if not os.path.isdir(setdir + "/reports/arduino_sniffer"):
                         os.makedirs(setdir + "/reports/arduino_sniffer")
-                    shutil.copyfile("src/teensy/x10/x10_sniffer.pde",
-                                    setdir + "/reports/arduino_sniffer/x10_sniffer.pde")
+                    shutil.copyfile("src/teensy/x10/x10_sniffer.ino",
+                                    setdir + "/reports/arduino_sniffer/x10_sniffer.ino")
                     shutil.copyfile("src/teensy/x10/libraries.zip",
                                     setdir + "/reports/arduino_sniffer/libraries.zip")
                     print_status(
@@ -1024,13 +1023,13 @@ try:
                 # if we are doing the X10 Jammer
                 if teensy_menu_choice == "11":
                     print_status(
-                        "Generating the Arduino jammer pde and libraries...")
+                        "Generating the Arduino jammer ino and libraries...")
                     if not os.path.isdir(setdir + "/reports/arduino_jammer"):
                         os.makedirs(setdir + "/reports/arduino_jammer")
-                    shutil.copyfile("src/teensy/x10/x10_blackout.pde",
-                                    setdir + "/reports/arduino_jammer/x10_blackout.pde")
+                    shutil.copyfile("src/teensy/x10/x10_blackout.ino",
+                                    setdir + "/reports/arduino_jammer/x10_blackout.ino")
                     shutil.copyfile("src/teensy/x10/libraries.zip",
-                                    setdir + "/reports/arduino_hammer/libraries.zip")
+                                    setdir + "/reports/arduino_jammer/libraries.zip")
                     print_status(
                         "Arduino jammer files and libraries exported to ~/.set/reports/arduino_jammer")
                     return_continue()
@@ -1038,10 +1037,18 @@ try:
                 # powershell shellcode injection
                 if teensy_menu_choice == "12":
                     print_status(
-                        "Generating the Powershell - Shellcode injection pde..")
+                        "Generating the Powershell - Shellcode injection ino..")
                     debug_msg(
                         me, "importing 'src.teensy.powershell_shellcode'", 1)
                     import src.teensy.powershell_shellcode
+
+		# HID Msbuild compile to memory Shellcode Attack
+                if teensy_menu_choice == "14":
+                    print_status(
+                        "HID Msbuild compile to memory Shellcode Attack selected")
+                    debug_msg(
+                        me, "importing '-----file-----'", 1)
+                    import src.teensy.ino_gen
 
             if teensy_menu_choice == "99":
                 teensy_menu_choice = None
@@ -1097,14 +1104,15 @@ try:
                         # start the menu here
                         while 1:
 
-                                ###############################################
-                                #        USER INPUT: SHOW WIRELESS MENU           #
-                                ###############################################
+                                #
+                                # USER INPUT: SHOW WIRELESS MENU           #
+                                #
                             debug_msg(
                                 me, "printing 'text.wireless_attack_menu'", 5)
                             show_wireless_menu = create_menu(
                                 text.wireless_attack_text, text.wireless_attack_menu)
-                            wireless_menu_choice = raw_input(setprompt(["8"], ""))
+                            wireless_menu_choice = raw_input(
+                                setprompt(["8"], ""))
                             # if we want to start access point
                             if wireless_menu_choice == "1":
                                 sys.path.append(definepath + "/src/wireless/")
@@ -1163,21 +1171,34 @@ and send the QRCode via a mailer.
 
             except ImportError:
                 print_error(
-                    "This module requires python-imaging to work properly.")
-                print_error("In Ubuntu do apt-get install python-imaging")
+                    "This module requires PIL (Or Pillow) and qrcode to work properly.")
                 print_error(
-                    "Else refer to here for installation: http://code.google.com/appengine/docs/python/images/installingPIL.html")
+                    "Just do pip install Pillow; pip install qrcode")
+                print_error(
+                    "Else refer to here for installation: http://pillow.readthedocs.io/en/3.3.x/installation.html")
                 return_continue()
 
-        # Main Menu choice 10: PowerShell Attacks
+        # Main Menu choice 9: PowerShell Attacks
         if main_menu_choice == '9':
             try:
                 module_reload(src.powershell.powershell)
             except:
                 import src.powershell.powershell
 
-        # Main Menu choice 11: Third Party Modules
+        # sms spoofing module option 10
         if main_menu_choice == '10':
+
+
+            ### TEMPORARILY DISABLED
+            print_error("This module is currently disabled as spoofmytextmessage.com is currently experiencing issues. As soon as it is working again or I can rework the module, this will remain disabled.")
+            raw_input("Press {return} to connect to the main menu.")
+            #try:
+            #    module_reload(src.sms.sms)
+            #except:
+            #    import src.sms.sms
+
+        # Main Menu choice 11: Third Party Modules
+        if main_menu_choice == '11':
             sys.path.append(definepath + "/src/core")
             debug_msg(me, "importing 'src.core.module_handler'", 1)
             try:
@@ -1193,3 +1214,4 @@ and send the QRCode via a mailer.
 except KeyboardInterrupt:
     print("\n\n Thank you for " + bcolors.RED + "shopping" + bcolors.ENDC +
           " with the Social-Engineer Toolkit.\n\n Hack the Gibson...and remember...hugs are worth more than handshakes.\n")
+

@@ -21,7 +21,7 @@ PORT_TOO_HIGH = "Let's stick with the LOWER 65,535 ports..."
 main_text = " Select from the menu:\n"
 
 main_menu = ['Social-Engineering Attacks',
-             'Fast-Track Penetration Testing',
+             'Penetration Testing (Fast-Track)',
              'Third Party Modules',
              'Update the Social-Engineer Toolkit',
              'Update SET configuration',
@@ -36,6 +36,7 @@ main = ['Spear-Phishing Attack Vectors',
         'Wireless Access Point Attack Vector',
         'QRCode Generator Attack Vector',
         'Powershell Attack Vectors',
+	'SMS Spoofing Attack Vector', 
         'Third Party Modules']
 
 spearphish_menu = ['Perform a Mass Email Attack',
@@ -107,7 +108,7 @@ to convert the payload back to a binary for us.
 """)
 
 webattack_text = ("""
-The Web Attack module is  a unique way of utilizing multiple web-based attacks in order to compromise the intended victim.
+The Web Attack module is a unique way of utilizing multiple web-based attacks in order to compromise the intended victim.
 
 The """ + bcolors.BOLD + """Java Applet Attack""" + bcolors.ENDC + """ method will spoof a Java Certificate and deliver a metasploit based payload. Uses a customized java applet created by Thomas Werth to deliver the payload.
 
@@ -155,6 +156,7 @@ teensy_menu = ['Powershell HTTP GET MSF Payload',
                'X10 Arduino Jammer PDE and Libraries',
                'Powershell Direct ShellCode Teensy Attack',
                'Peensy Multi Attack Dip Switch + SDCard Attack',
+	       'HID Msbuild compile to memory Shellcode Attack',
                '0D']
 
 teensy_text = ("""
@@ -236,18 +238,18 @@ infectious_text = """
  Pick the attack vector you wish to use: fileformat bugs or a straight executable.
 """
 
-
 # used in create_payloads.py
 if operating_system != "windows":
     if msf_path != False:
         payload_menu_1 = [
-            'Meterpreter Memory Injection (DEFAULT)  This will drop a meterpreter payload through PyInjector',
-            'Meterpreter Multi-Memory Injection      This will drop multiple Metasploit payloads via memory',
+            'Meterpreter Memory Injection (DEFAULT)  This will drop a meterpreter payload through powershell injection',
+            'Meterpreter Multi-Memory Injection      This will drop multiple Metasploit payloads via powershell injection',
             'SE Toolkit Interactive Shell            Custom interactive reverse toolkit designed for SET',
             'SE Toolkit HTTP Reverse Shell           Purely native HTTP shell with AES encryption support',
             'RATTE HTTP Tunneling Payload            Security bypass payload that will tunnel all comms over HTTP',
             'ShellCodeExec Alphanum Shellcode        This will drop a meterpreter payload through shellcodeexec',
-            'Import your own executable              Specify a path for your own executable\n']
+            'Import your own executable              Specify a path for your own executable',
+            'Import your own commands.txt            Specify payloads to be sent via command line\n']
 
 if operating_system == "windows" or msf_path == False:
     payload_menu_1 = [
@@ -262,13 +264,10 @@ What payload do you want to generate:
 """
 
 # used in gen_payload.py
-
 payload_menu_2 = [
     'Windows Shell Reverse_TCP               Spawn a command shell on victim and send back to attacker',
     'Windows Reverse_TCP Meterpreter         Spawn a meterpreter shell on victim and send back to attacker',
     'Windows Reverse_TCP VNC DLL             Spawn a VNC server on victim and send back to attacker',
-    #'Windows Bind Shell                      Execute payload and create an accepting port on remote system.',
-    #'Windows Bind Shell X64                  Windows x64 Command Shell, Bind TCP Inline',
     'Windows Shell Reverse_TCP X64           Windows X64 Command Shell, Reverse TCP Inline',
     'Windows Meterpreter Reverse_TCP X64     Connect back to the attacker (Windows x64), Meterpreter',
     'Windows Meterpreter Egress Buster       Spawn a meterpreter shell and find a port home via multiple ports',
